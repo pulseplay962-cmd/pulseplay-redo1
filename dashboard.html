@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PulsePlay Dashboard</title>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { margin:0; font-family:Arial; background:#0b0f19; color:white; }
+    header { padding:15px; background:#111827; display:flex; justify-content:space-between; }
+    .container { padding:20px; display:grid; gap:20px; }
+    .panel { background:#1f2937; padding:15px; border-radius:10px; }
+    input { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:none; }
+    button { padding:10px; background:#3b82f6; border:none; color:white; border-radius:8px; cursor:pointer; }
+    .clip { background:#111827; padding:10px; margin-bottom:10px; border-radius:8px; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  🚀 PulsePlay Dashboard
+  <button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+  <!-- LOGIN -->
+  <div class="panel">
+    <h3>🔐 Login / Signup</h3>
+
+    <input id="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Signup</button>
+  </div>
+
+  <!-- AI -->
+  <div class="panel">
+    <h3>🧠 AI Predictor</h3>
+    <input id="title" placeholder="Clip title..." />
+    <button onclick="predict()">Predict</button>
+    <div id="result"></div>
+  </div>
+
+  <!-- CLIPS -->
+  <div class="panel">
+    <h3>🔥 Clips</h3>
+    <div id="clips"></div>
+  </div>
+
+</div>
+
+<script>
+let token = localStorage.getItem("token");
+
+// ---------------- AUTH HEADERS ----------------
+function authHeaders(){
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+  };
+}
+
+// ---------------- LOGIN ----------------
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({email, password})
+  });
+
+  const data = await res.json();
+
+  if(data.token){
+    localStorage.setItem("token", data.token);
+    token = data.token;
+    alert("Logged in 🚀");
+    loadClips();
+  } else {
+    alert("Login failed");
+  }
+}
+
+// ---------------- SIGNUP ----------------
+async function signup(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/signup", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({email, password})
+  });
+
+  const data = await res.json();
+
+  if(data.token){
+    localStorage.setItem("token", data.token);
+    token = data.token;
+    alert("Account created 🚀");
+    loadClips();
+  }
+}
+
+// ---------------- AI ----------------
+async function predict(){
+  const title = document.getElementById("title").value;
+
+  const res = await fetch("/predict", {
+    method:"POST",
+    headers: authHeaders(),
+    body: JSON.stringify({title})
+  });
+
+  const data = await res.json();
+
+  document.getElementById("result").innerHTML =
+    `Score: ${data.score}<br/>Tip: ${data.tips}`;
+}
+
+// ---------------- CLIPS ----------------
+async function loadClips(){
+  if(!token) return;
+
+  const res = await fetch("/clips", {
+    headers: authHeaders()
+  });
+
+  const data = await res.json();
+
+  const div = document.getElementById("clips");
+  div.innerHTML = "";
+
+  (data.clips || []).forEach(c=>{
+    const el = document.createElement("div");
+    el.className = "clip";
+
+    el.innerHTML = `
+      <b>${c.title}</b><br/>
+      Score: ${c.score || 0}
+    `;
+
+    div.appendChild(el);
+  });
+}
+
+// ---------------- LOGOUT ----------------
+function logout(){
+  localStorage.removeItem("token");
+  token = null;
+  location.reload();
+}
+
+if(token){
+  loadClips();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PulsePlay SaaS</title>
+
+  <!-- ✅ Supabase v2 (IMPORTANT) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #05070d;
+  color: #e5e7eb;
+}
+
+header {
+  padding: 12px 18px;
+  background: #0b1220;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #1f2937;
+}
+
+.container {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.panel {
+  background: #0b1220;
+  border: 1px solid #1f2937;
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+.panel h3 {
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.clip {
+  background: #0f172a;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid #334155;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.clip:hover {
+  transform: scale(1.01);
+  border-left: 3px solid #3b82f6;
+}
+
+.viral {
+  border-left: 3px solid gold;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  background: #0f172a;
+  color: white;
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
+button {
+  padding: 10px;
+  background: #2563eb;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="brand">🚀 PulsePlay</div>
+  <h1>Creator SaaS Platform</h1>
+  <p>Sign in to access your dashboard</p>
+
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+
+  <button class="login" onclick="login()">Login</button>
+  <button class="signup" onclick="signup()">Create Account</button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+/* =========================
+   🔐 SUPABASE CONFIG
+   ========================= */
+const supabaseUrl = "https://vwdyfrqtycczlxdaroir.supabase.com";
+const supabaseKey = "sb_publishable_PAS7uzzhNWXiyLepmT8Olw_x6kWJXbc";
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+const status = document.getElementById("status");
+
+/* =========================
+   🧪 VALIDATION HELPER
+   ========================= */
+function validate(email, password) {
+  if (!email || !password) {
+    status.innerText = "⚠️ Please enter email and password";
+    return false;
+  }
+  return true;
+}
+
+/* =========================
+   🚀 SIGN UP
+   ========================= */
+async function signup() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!validate(email, password)) return;
+
+  status.innerText = "Creating account...";
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    status.innerText = error.message;
+  } else {
+    status.innerText = "✅ Account created! Check your email to confirm.";
+  }
+}
+
+/* =========================
+   🔑 LOGIN
+   ========================= */
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!validate(email, password)) return;
+
+  status.innerText = "Logging in...";
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      status.innerText = "📧 Please confirm your email before logging in.";
+    } else {
+      status.innerText = error.message;
+    }
+    return;
+  }
+
+  // Save session locally
+  localStorage.setItem("pulseplay_user", JSON.stringify(data.user));
+
+  // ✅ FIXED redirect (relative path)
+  window.location.href = "dashboard.html";
+}
+
+/* =========================
+   🔁 AUTO SESSION CHECK
+   ========================= */
+window.onload = async () => {
+  const { data } = await supabase.auth.getSession();
+
+  if (data.session) {
+    window.location.href = "dashboard.html";
+  }
+};
+</script>
+
+</body>
+</html>
